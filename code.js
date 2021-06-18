@@ -1,6 +1,6 @@
 const category = {hold: false,title: "category",percentage: 0};
 let allCategories = [];
-newCategory(0);
+newCategory(0,100);
 addListeners(document.getElementById("category0"));
 
 function newCategory(number) {
@@ -9,6 +9,27 @@ function newCategory(number) {
     defaultStart.title = `Category${number}`;
     defaultStart.percentage = getNewPercentage();
     allCategories = [...allCategories,defaultStart];
+}
+
+function checkFillPercent() {
+    let changeableFillPercent=0;
+    for (const element of allCategories) {
+        if (!element.hold) {
+            changeableFillPercent+=element.percentage;
+        } 
+    }
+    return changeableFillPercent;
+}
+
+function updatePercentages(oldChangeableFillPercent,newChangeableFillPercent) {
+    console.log(`Update percentages called with old fill percent at ${oldChangeableFillPercent} and the new one at ${newChangeableFillPercent}`)
+    for (const element of allCategories) {
+        if (!element.hold) {
+            let oldValue = element.percentage;
+            element.percentage = Math.round((oldValue/oldChangeableFillPercent)*newChangeableFillPercent*100)/100;
+            document.getElementById(`category${allCategories.indexOf(element)}`).firstChild.nextSibling.nextSibling.value = element.percentage;
+        }
+    }
 }
 
 function getNewPercentage() {
@@ -22,9 +43,8 @@ function getNewPercentage() {
             numberOfHeldElements++;
         }
     }
-    console.log(`Changeable fill percent is ${changeableFillPercent}`);
-    console.log(`Number of held elements is ${numberOfHeldElements}`);
-    let percentAvailable = changeableFillPercent/(allCategories.length+1-numberOfHeldElements);
+    let percentAvailable = Math.round(changeableFillPercent/(allCategories.length+1-numberOfHeldElements)*100)/100;
+    updatePercentages(changeableFillPercent,changeableFillPercent-percentAvailable);
     return percentAvailable;
 }
 
@@ -41,9 +61,17 @@ function changeTitle(event) {
 }
 
 function changePercentage(event) {
-    let newVal = parseInt(event.target.value);
+    let alreadyHeld = event.target.parentElement.firstChild.checked;
     let target = event.target.parentElement.id.slice(-1);
+    allCategories[target].hold = true;
+    let oldFillPercent = checkFillPercent();
+    let previousPercentage = allCategories[target].percentage;
+    let newVal = parseFloat(event.target.value);
+    updatePercentages(oldFillPercent,oldFillPercent-(newVal-previousPercentage));
     allCategories[target].percentage = newVal;
+    if (!alreadyHeld) {
+        allCategories[target].hold = false;
+    }
 }
 
 function addListeners(object) {
@@ -67,6 +95,7 @@ function addNew() {
     listElement.appendChild(title);
     let percent = document.createElement("input");
     percent.type = "number";
+    percent.step = "0.01";
     percent.value = allCategories[orderNum].percentage;
     listElement.appendChild(percent);
     addListeners(listElement);
